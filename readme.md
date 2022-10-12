@@ -30,6 +30,6 @@ you can test by run
 node test/index.js
 ```
 
-and you can check these points in [preview-points](./docs/index.html)
+and you can check these points in [preview-points](https://pkjy.github.io/points-in-area/)
 
 ![results can be like](./test/result.png)
