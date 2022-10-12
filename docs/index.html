@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+  <title>坐标点标记工具</title>
+  <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+  <style>
+    html,
+    body,
+    #container {
+      height: 100%;
+      width: 100%;
+    }
+
+    .amap-icon img,
+    .amap-marker-content img {
+      width: 25px;
+      height: 34px;
+    }
+
+    .marker {
+      position: absolute;
+      top: -20px;
+      right: -118px;
+      color: #fff;
+      padding: 4px 10px;
+      box-shadow: 1px 1px 1px rgba(10, 10, 10, .2);
+      white-space: nowrap;
+      font-size: 12px;
+      font-family: "";
+      background-color: #25A5F7;
+      border-radius: 3px;
+    }
+
+    .input-card {
+      width: 18rem;
+      z-index: 170;
+    }
+
+    .input-card .btn {
+      margin-right: .8rem;
+    }
+
+    .input-card .btn:last-child {
+      margin-right: 0;
+    }
+
+    .input-item {
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+  <div class="input-card">
+    <label style="color:grey">第一步：选择点的数据文件</label>
+    <input type="file" id="file">
+    <label style="color:grey">第二步：点击添加标记</label>
+    <div>
+      <input id="addMarker" type="button" class="btn" onclick="addMarker()" value="添加点标记">
+      <input id="clearMarker" type="button" class="btn" onclick="clearMarker()" value="删除点标记">
+    </div>
+    <label style="color:grey">可选：查看行政区边界</label>
+    <div class="input-item">
+      <input id="district" value="" placeholder="例如:鹤城区"><button onclick="districtSearch()">查询</button>
+    </div>
+  </div>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script type="text/javascript"
+    src="https://webapi.amap.com/maps?v=1.4.15&key=feaa1ba78b9d3533bbd7369854dfac14"></script>
+  <script type="text/javascript">
+    var data
+    var markers = [];
+    document.querySelector('#file').addEventListener('change', (e) => {
+      var reader = new FileReader();//新建一个FileReader
+      reader.readAsText(e.target.files[0], "UTF-8");//读取文件 
+      reader.onload = function (evt) { //读取完文件之后会回来这里
+        var fileString = evt.target.result; // 读取文件内容
+        data = JSON.parse('[[' + fileString.replace(/\n/g, '],[') + ']]').filter(v => v.length !== 0)
+        // console.log(fileString, data)
+      }
+    })
+
+    var marker, map = new AMap.Map("container", {
+      resizeEnable: true,
+      center: [121.472644, 31.231706],
+      zoom: 13
+    });
+
+    // 实例化点标记
+    function addMarker() {
+      // var data = []
+      data.forEach(v => {
+        marker = new AMap.Marker({
+          icon: "./bright-red-poi-pointer-location-512.webp",
+          position: v,
+          // offset: new AMap.Pixel(-13, -30)
+        });
+        marker.setMap(map);
+        markers.push(marker);
+      })
+      map.setFitView();
+    }
+
+    // 清除 marker
+    function clearMarker() {
+      map.remove(markers);
+      markers = []
+    }
+
+    function districtSearch() {
+      var value = document.querySelector('#district').value
+      if (!value) return alert('未输入内容！')
+      AMap.plugin('AMap.DistrictSearch', function () {
+        // 创建行政区查询对象
+        var district = new AMap.DistrictSearch({
+          // 返回行政区边界坐标等具体信息
+          extensions: 'all',
+          // 设置查询行政区级别为 区 
+          level: 'district'
+        })
+
+        district.search(value, function (status, result) {
+          // 获取朝阳区的边界信息
+          var bounds = result.districtList[0].boundaries
+          var polygons = []
+          if (bounds) {
+            for (var i = 0, l = bounds.length; i < l; i++) {
+              //生成行政区划polygon
+              var polygon = new AMap.Polygon({
+                map: map,
+                strokeWeight: 1,
+                path: bounds[i],
+                fillOpacity: 0.7,
+                fillColor: '#CCF3FF',
+                strokeColor: '#CC66CC'
+              })
+              polygons.push(polygon)
+            }
+            // 地图自适应
+            map.setFitView()
+          }
+        })
+      })
+    }
+  </script>
+</body>
+
+</html>
